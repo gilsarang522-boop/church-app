@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>교인 관리 시스템</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --primary:#185FA5;--pl:#E6F1FB;--pd:#0C447C;
+  --success:#3B6D11;--sl:#EAF3DE;
+  --warning:#854F0B;--wl:#FAEEDA;
+  --purple:#534AB7;--pul:#EEEDFE;
+  --teal:#0F6E56;--tl:#E1F5EE;
+  --coral:#993C1D;--cl:#FAECE7;
+  --border:#e0ddd8;--border2:#c0bdb8;
+  --bg:#f5f3f0;--bgc:#ffffff;--bgs:#f8f6f3;
+  --text:#1a1a18;--ts:#5a5855;--th:#9a9895;
+  --r:12px;--rl:16px;--rxl:20px;
+}
+body{font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.5;}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:600px;margin:0 auto;background:var(--bgc);position:relative;}
+.topbar{background:var(--bgc);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;}
+.topbar-title{font-size:18px;font-weight:600;}
+.rbadge{font-size:12px;padding:5px 10px;border-radius:999px;font-weight:600;cursor:pointer;background:var(--pl);color:var(--pd);}
+.content{flex:1;overflow-y:auto;padding:14px 16px;}
+.bottom-nav{background:var(--bgc);border-top:1px solid var(--border);display:flex;position:sticky;bottom:0;}
+.bnav{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 2px;cursor:pointer;border:none;background:none;color:var(--th);gap:3px;}
+.bnav.active{color:var(--primary);}
+.bnav-icon{font-size:19px;}
+.bnav-label{font-size:10px;font-weight:600;}
+.panel{display:none;}.panel.active{display:block;}
+
+/* 공통 */
+.card{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);padding:15px;margin-bottom:12px;}
+.card-title{font-size:14px;font-weight:600;color:var(--ts);margin-bottom:10px;}
+.sec-title{font-size:17px;font-weight:600;margin-bottom:12px;}
+.btn{padding:9px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bgc);font-size:14px;font-weight:600;cursor:pointer;color:var(--text);}
+.btn:active{background:var(--bgs);}
+.btn-p{background:var(--primary);color:#fff;border-color:var(--primary);}
+.btn-p:active{background:var(--pd);}
+.btn-full{width:100%;padding:13px;font-size:15px;text-align:center;display:block;}
+.tag{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600;}
+.tag-new{background:var(--pul);color:var(--purple);}
+.tag-active{background:var(--sl);color:var(--success);}
+
+/* 통계 */
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
+.sb{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);padding:14px;}
+.sn{font-size:28px;font-weight:700;line-height:1;}
+.sl-{font-size:13px;color:var(--ts);margin-top:4px;}
+
+/* 알림 행 */
+.arow{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border);}
+.arow:last-child{border-bottom:none;padding-bottom:0;}
+.aicon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.ic-b{background:var(--pl);} .ic-p{background:var(--pul);} .ic-a{background:var(--wl);} .ic-g{background:var(--sl);}
+.abody{flex:1;}
+.aname{font-size:15px;font-weight:600;margin-bottom:1px;}
+.adesc{font-size:13px;color:var(--ts);}
+
+/* 가족 카드 */
+.fcard{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:10px;cursor:pointer;}
+.fcard:active{background:var(--bgs);}
+.fcard-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.fcard-name{font-size:17px;font-weight:600;flex:1;}
+.fcard-sub{font-size:13px;color:var(--ts);}
+.fmembers{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.fmchip{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:var(--bgs);color:var(--ts);}
+
+/* 검색/필터 */
+.sinput{width:100%;border:1.5px solid var(--border2);border-radius:var(--r);padding:11px 13px;font-size:16px;background:var(--bgc);color:var(--text);margin-bottom:11px;}
+.fscroll{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:11px;scrollbar-width:none;}
+.fscroll::-webkit-scrollbar{display:none;}
+.fchip{padding:7px 13px;border-radius:999px;font-size:13px;border:1.5px solid var(--border2);background:var(--bgc);cursor:pointer;white-space:nowrap;color:var(--ts);font-weight:600;}
+.fchip.on{background:var(--pl);color:var(--pd);border-color:#85B7EB;}
+
+/* 프로필 */
+.pback{padding:8px 0 6px;cursor:pointer;font-size:15px;color:var(--primary);font-weight:600;}
+.phero{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:11px;}
+.phero-title{font-size:19px;font-weight:700;margin-bottom:4px;}
+.phero-sub{font-size:13px;color:var(--ts);margin-bottom:12px;}
+.member-list-section{margin-bottom:11px;}
+.mitem{background:var(--bgs);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+.mavatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.minfo{flex:1;}
+.mname{font-size:15px;font-weight:600;}
+.msub{font-size:12px;color:var(--ts);margin-top:2px;}
+
+/* 정보 섹션 */
+.isec{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:11px;overflow:hidden;}
+.isec-title{padding:11px 15px;font-size:14px;font-weight:600;border-bottom:1px solid var(--border);color:var(--ts);}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:11px 15px;border-bottom:1px solid var(--border);}
+.irow:last-child{border-bottom:none;}
+.ikey{font-size:14px;color:var(--ts);}
+.ival{font-size:14px;font-weight:600;text-align:right;max-width:65%;}
+
+/* 가족 메모 */
+.memo-box{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:11px;overflow:hidden;}
+.memo-box-title{padding:12px 15px;font-size:15px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.memo-item{padding:13px 15px;border-bottom:1px solid var(--border);}
+.memo-item:last-child{border-bottom:none;}
+.memo-meta{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.memo-date{font-size:12px;color:var(--th);}
+.mtag{font-size:11px;padding:2px 7px;border-radius:999px;font-weight:600;}
+.mt-visit{background:var(--pul);color:var(--purple);}
+.mt-counsel{background:var(--wl);color:var(--warning);}
+.mt-event{background:var(--sl);color:var(--success);}
+.mt-daily{background:var(--tl);color:var(--teal);}
+.mt-prayer{background:var(--cl);color:var(--coral);}
+.mt-edu{background:var(--pl);color:var(--pd);}
+.memo-content{font-size:15px;line-height:1.6;}
+.memo-input-box{padding:13px 15px;border-top:1px solid var(--border);background:var(--bgs);}
+.mini-select{border:1.5px solid var(--border2);border-radius:var(--r);padding:8px 10px;font-size:14px;background:var(--bgc);color:var(--text);width:100%;margin-bottom:8px;}
+.mtextarea{width:100%;border:1.5px solid var(--border2);border-radius:var(--r);padding:10px;font-size:15px;line-height:1.6;min-height:70px;resize:none;background:var(--bgc);color:var(--text);font-family:inherit;}
+
+/* AI 박스 */
+.aibox{background:var(--pl);border:1px solid #85B7EB;border-radius:var(--rl);padding:13px;margin-bottom:11px;}
+.aibox-title{font-size:13px;font-weight:700;color:var(--pd);margin-bottom:6px;}
+.ai-msg{font-size:14px;line-height:1.8;color:#042C53;white-space:pre-wrap;}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--primary);animation:blink 1s infinite;display:inline-block;margin:0 2px;}
+.ai-dot:nth-child(2){animation-delay:0.2s;}.ai-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes blink{0%,80%,100%{opacity:0.2;}40%{opacity:1;}}
+
+/* 새가족 교육 */
+.edu-header{background:var(--pul);border:1px solid #AFA9EC;border-radius:var(--rl);padding:13px;margin-bottom:10px;}
+.edu-progress{display:flex;gap:5px;margin:10px 0 6px;}
+.edu-dot{flex:1;height:50px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:1.5px solid var(--border);background:var(--bgs);color:var(--th);cursor:pointer;flex-direction:column;gap:1px;}
+.edu-dot.done{background:var(--purple);border-color:var(--purple);color:#fff;}
+.edu-dot.next{background:var(--pul);border-color:#AFA9EC;color:var(--purple);}
+.cal-popup{background:var(--bgc);border:1px solid var(--border);border-radius:var(--rl);padding:13px;margin-bottom:10px;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dl{font-size:11px;text-align:center;color:var(--th);padding:2px 0;font-weight:600;}
+.cal-day{height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;font-weight:500;}
+.cal-day:hover:not(.empty){background:var(--bgs);}
+.cal-day.today{background:var(--pl);color:var(--pd);font-weight:700;}
+.cal-day.empty{cursor:default;}
+
+/* 교구 배정 */
+.assign-box{background:var(--wl);border:1px solid #EF9F27;border-radius:var(--rl);padding:13px;margin-bottom:10px;}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+.pbtn{padding:11px 6px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--bgc);font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:var(--text);}
+.pbtn.sel{border-color:var(--primary);background:var(--pl);color:var(--pd);}
+
+/* 새가족 카드 */
+.nfcard{background:var(--bgc);border:1px solid #AFA9EC;border-radius:var(--rl);padding:12px;margin-bottom:8px;cursor:pointer;}
+.edots{display:flex;gap:3px;margin-top:6px;}
+.edot{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+.edot-d{background:var(--purple);color:#fff;}
+.edot-n{background:var(--pul);border:1px solid #AFA9EC;color:var(--purple);}
+.edot-e{background:var(--bgs);border:1px solid var(--border);color:var(--th);}
+
+/* 통계 차트 */
+.brow{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.blabel{font-size:13px;min-width:56px;color:var(--ts);font-weight:600;}
+.btrack{flex:1;height:24px;background:var(--bgs);border-radius:5px;overflow:hidden;}
+.bfill{height:100%;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;}
+.bnum{font-size:11px;font-weight:700;color:#fff;}
+
+/* 모달 */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center;z-index:100;}
+.mbg.open{display:flex;}
+.msheet{background:var(--bgc);border-radius:var(--rxl) var(--rxl) 0 0;padding:20px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:700;margin-bottom:14px;}
+.fg{margin-bottom:11px;}
+.fl{font-size:14px;font-weight:600;color:var(--ts);margin-bottom:4px;display:block;}
+.finput{width:100%;border:1.5px solid var(--border2);border-radius:var(--r);padding:11px;font-size:15px;background:var(--bgc);color:var(--text);font-family:inherit;}
+.finput:focus{outline:none;border-color:var(--primary);}
+.fselect{width:100%;border:1.5px solid var(--border2);border-radius:var(--r);padding:11px;font-size:15px;background:var(--bgc);color:var(--text);}
+.mbtns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px;}
+
+/* 멤버 추가 구역 */
+.member-add-area{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:13px;margin-bottom:11px;}
+.member-add-item{background:var(--bgs);border-radius:var(--r);padding:12px;margin-bottom:8px;position:relative;}
+.member-add-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.member-remove-btn{position:absolute;top:10px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--th);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+/* 설정 */
+.api-input{width:100%;border:1.5px solid var(--border2);border-radius:var(--r);padding:9px 11px;font-size:13px;background:var(--bgs);color:var(--text);font-family:monospace;margin-top:5px;}
+
+/* 토스트 */
+.toast{position:fixed;bottom:75px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:11px 18px;border-radius:var(--r);font-size:14px;font-weight:600;z-index:200;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div class="topbar-title" id="topbarTitle">오늘 할 일</div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span class="rbadge" id="roleBtn" onclick="toggleRole()">관리자</span>
+    <span style="font-size:13px;color:var(--ts);" id="userName">홍길동 목사</span>
+  </div>
+</div>
+<div class="content">
+
+<!-- 홈 -->
+<div class="panel active" id="page-home">
+  <div class="sg">
+    <div class="sb"><div class="sn" style="color:var(--primary);" id="homeTotal">0</div><div class="sl-">전체 가족</div></div>
+    <div class="sb"><div class="sn" style="color:var(--purple);" id="homeNew">0</div><div class="sl-">새가족 교육 중</div></div>
+  </div>
+  <div class="sg">
+    <div class="sb"><div class="sn" style="color:var(--warning);" id="homeWaiting">0</div><div class="sl-">교구 배정 대기</div></div>
+    <div class="sb"><div class="sn" style="color:var(--teal);" id="homeMemos">0</div><div class="sl-">이번 달 메모</div></div>
+  </div>
+  <div class="card"><div class="card-title">오늘 챙겨야 할 분</div><div id="homeAlerts"></div></div>
+  <div class="card"><div class="card-title">최근 가족 메모</div><div id="homeRecentMemos"></div></div>
+</div>
+
+<!-- 가족 목록 -->
+<div class="panel" id="page-families">
+  <input class="sinput" placeholder="가족 이름으로 검색..." oninput="filterFamilies(this.value)">
+  <div class="fscroll" id="familyFilterRow">
+    <div class="fchip on" onclick="setFFilter(this,'전체')">전체</div>
+    <div class="fchip" onclick="setFFilter(this,'1교구')">1교구</div>
+    <div class="fchip" onclick="setFFilter(this,'2교구')">2교구</div>
+    <div class="fchip" onclick="setFFilter(this,'3교구')">3교구</div>
+    <div class="fchip" onclick="setFFilter(this,'4교구')">4교구</div>
+    <div class="fchip" onclick="setFFilter(this,'교회학교')">교회학교</div>
+    <div class="fchip" onclick="setFFilter(this,'새가족')">새가족</div>
+  </div>
+  <div id="familyList"></div>
+  <button class="btn btn-p btn-full" onclick="openAddFamilyModal()">+ 가족 등록</button>
+</div>
+
+<!-- 가족 상세 -->
+<div class="panel" id="page-family-detail">
+  <div class="pback" onclick="goPage('families')">← 가족 목록으로</div>
+  <div class="phero">
+    <div class="phero-title" id="detailFamilyName"></div>
+    <div class="phero-sub" id="detailFamilySub"></div>
+    <div style="display:flex;gap:7px;margin-top:10px;">
+      <button class="btn" style="flex:1;font-size:13px;" onclick="editFamily()">✏ 정보 수정</button>
+      <button class="btn" style="flex:1;font-size:13px;background:var(--pl);color:var(--pd);border-color:#85B7EB;" onclick="triggerFamilyAI()">✦ AI 메시지</button>
+    </div>
+  </div>
+  <div id="detailAiBox" style="display:none;"><div class="aibox"><div class="aibox-title">✦ AI 심방 메시지</div><div id="detailAiContent"></div><div style="display:flex;gap:7px;margin-top:9px;"><button class="btn" style="font-size:13px;" onclick="copyAiMsg()">복사</button><button class="btn btn-p" style="font-size:13px;" onclick="triggerFamilyAI()">다시 생성</button></div></div></div>
+
+  <!-- 구성원 -->
+  <div class="card-title" style="margin-bottom:8px;">구성원</div>
+  <div id="detailMembers"></div>
+
+  <!-- 새가족 교육 (해당 시) -->
+  <div id="detailEduSection" style="display:none;"></div>
+
+  <!-- 교구 배정 (해당 시) -->
+  <div id="detailAssignSection" style="display:none;"></div>
+
+  <!-- 가족 메모 -->
+  <div class="memo-box">
+    <div class="memo-box-title">
+      <span>가족 메모</span>
+      <button class="btn btn-p" style="font-size:12px;padding:6px 12px;" onclick="toggleMemoInput()">+ 메모 추가</button>
+    </div>
+    <div id="memoInputSection" style="display:none;">
+      <div class="memo-input-box">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="date" class="finput" id="memoDateInput" style="flex:1;font-size:14px;" value="">
+          <select class="fselect" id="memoTagSelect" style="flex:1;font-size:14px;">
+            <option value="daily">일상</option>
+            <option value="visit">심방</option>
+            <option value="counsel">상담</option>
+            <option value="prayer">기도제목</option>
+            <option value="event">경조사</option>
+            <option value="edu">교육/훈련</option>
+          </select>
+        </div>
+        <textarea class="mtextarea" id="memoTextInput" placeholder="메모 내용을 입력하세요..."></textarea>
+        <button class="btn btn-p btn-full" style="margin-top:8px;" onclick="saveFamilyMemo()">저장</button>
+      </div>
+    </div>
+    <div id="memoList"></div>
+  </div>
+</div>
+
+<!-- 새가족 관리 -->
+<div class="panel" id="page-newfamily">
+  <div class="sec-title">새가족 관리</div>
+  <div class="card" style="background:var(--pul);border-color:#AFA9EC;">
+    <div style="font-size:14px;font-weight:700;color:var(--purple);margin-bottom:5px;">교구 배정 대기</div>
+    <div id="waitingAssign" style="font-size:14px;color:#3C3489;"></div>
+  </div>
+  <div id="newFamilyList"></div>
+</div>
+
+<!-- 통계 -->
+<div class="panel" id="page-stats">
+  <div class="sec-title">교구 통계</div>
+  <div class="sg" id="statsGrid"></div>
+  <div class="card"><div class="card-title">교구별 가족 수</div><div id="parishChart"></div></div>
+  <div class="card"><div class="card-title">새가족 교육 현황</div><div id="newFamilyStats"></div></div>
+  <div class="card"><div class="card-title">메모 태그 분석</div><div id="memoTagStats"></div></div>
+</div>
+
+<!-- 설정 -->
+<div class="panel" id="page-settings">
+  <div class="sec-title">설정</div>
+  <div class="card"><div class="card-title">API 연동</div>
+    <div style="margin-bottom:10px;"><div style="font-size:14px;font-weight:600;">Gemini API 키</div><input class="api-input" id="geminiKeyInput" type="password" placeholder="AIza..." oninput="saveSettings()"></div>
+    <div style="margin-bottom:10px;"><div style="font-size:14px;font-weight:600;">Google OAuth 클라이언트 ID</div><input class="api-input" id="oauthClientInput" type="password" placeholder="숫자.apps.googleusercontent.com" oninput="saveSettings()"></div>
+    <button class="btn btn-p btn-full" onclick="initGoogleDrive()">구글 드라이브 연결</button>
+    <div id="driveStatus" style="margin-top:8px;font-size:13px;color:var(--ts);"></div>
+  </div>
+  <div class="card"><div class="card-title">교구 담당 전도사</div><div id="parishLeaders"></div></div>
+  <div class="card"><div class="card-title">데이터 관리</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" onclick="exportData()">JSON 내보내기</button>
+      <button class="btn" onclick="document.getElementById('importFile').click()">JSON 가져오기</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this)">
+    </div>
+  </div>
+</div>
+
+</div>
+<div class="bottom-nav">
+  <button class="bnav active" id="nav-home" onclick="goPage('home')"><span class="bnav-icon">⌂</span><span class="bnav-label">오늘</span></button>
+  <button class="bnav" id="nav-families" onclick="goPage('families')"><span class="bnav-icon">♟</span><span class="bnav-label">교인</span></button>
+  <button class="bnav" id="nav-newfamily" onclick="goPage('newfamily')"><span class="bnav-icon">★</span><span class="bnav-label">새가족</span></button>
+  <button class="bnav" id="nav-stats" onclick="goPage('stats')"><span class="bnav-icon">◉</span><span class="bnav-label">통계</span></button>
+  <button class="bnav" id="nav-settings" onclick="goPage('settings')"><span class="bnav-icon">⚙</span><span class="bnav-label">설정</span></button>
+</div>
+</div>
+
+<!-- 가족 등록 모달 -->
+<div class="mbg" id="addFamilyModal">
+<div class="msheet">
+  <div class="mtitle">가족 등록</div>
+  <div class="fg"><label class="fl">가족 대표 성씨 / 가족명 *</label><input class="finput" id="fam_name" placeholder="예: 김○○ 가족"></div>
+  <div class="fg"><label class="fl">교구 *</label>
+    <select class="fselect" id="fam_parish">
+      <option value="">선택하세요</option>
+      <option>1교구</option><option>2교구</option><option>3교구</option><option>4교구</option><option>교회학교</option>
+    </select>
+  </div>
+  <div class="fg"><label class="fl">구분</label>
+    <select class="fselect" id="fam_type" onchange="updateFamType()">
+      <option value="regular">기존 교인</option><option value="new">새가족</option>
+    </select>
+  </div>
+
+  <div style="font-size:15px;font-weight:700;margin-bottom:10px;margin-top:4px;color:var(--ts);">구성원 입력</div>
+  <div id="memberAddList"></div>
+  <button class="btn btn-full" style="margin-bottom:12px;border-style:dashed;" onclick="addMemberForm()">+ 구성원 추가</button>
+
+  <div class="fg"><label class="fl">등록 메모</label><textarea class="finput" id="fam_memo" rows="2" placeholder="첫인상, 특이사항..."></textarea></div>
+  <div class="mbtns">
+    <button class="btn btn-full" onclick="closeModal('addFamilyModal')">취소</button>
+    <button class="btn btn-p btn-full" onclick="submitFamily()">등록 완료</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 상수
+// ============================================================
+const PARISHES = ['1교구','2교구','3교구','4교구','교회학교'];
+const PARISH_COLORS = {'1교구':'#185FA5','2교구':'#3B6D11','3교구':'#854F0B','4교구':'#A32D2D','교회학교':'#534AB7'};
+const MEN_GROUPS = Array.from({length:9},(_,i)=>`${i+1}남전도회`);
+const WOMEN_GROUPS = Array.from({length:20},(_,i)=>`${i+1}여전도회`);
+const CHILD_GROUPS = ['밀알','그루터기','고등부','중등부','초등부','유년부','유치부','유아부'];
+const FAITH_LEVELS = ['세례','학습','입교','재세례','미세례','구도자'];
+const GENDERS = ['남','여'];
+const ROLES_ADULT = ['성도','집사','권사','장로','전도사','목사'];
+const MEMO_TAGS = {daily:'일상',visit:'심방',counsel:'상담',prayer:'기도제목',event:'경조사',edu:'교육/훈련'};
+const MEMO_TAG_CLASS = {daily:'mt-daily',visit:'mt-visit',counsel:'mt-counsel',prayer:'mt-prayer',event:'mt-event',edu:'mt-edu'};
+const AVATAR_COLORS = [['#E6F1FB','#0C447C'],['#EAF3DE','#27500A'],['#FAEEDA','#633806'],['#EEEDFE','#3C3489'],['#FBEAF0','#72243E'],['#E1F5EE','#085041'],['#FAECE7','#712B13']];
+
+let families = [], settings = {}, currentFamilyId = null;
+let familyFilter = '전체', familySearch = '';
+let driveFileId = null, accessToken = null, gisInited = false, tokenClient = null;
+let calYear, calMonth, calTarget = null, selectedParish = null;
+let memberFormCount = 0;
+
+// ============================================================
+// 샘플 데이터
+// ============================================================
+const SAMPLE_FAMILIES = [
+  {id:'f1', name:'김민준 가족', parish:'1교구', type:'regular', createdAt:'2020-01-01',
+   members:[
+     {id:'p1',name:'김민준',gender:'남',birth:'1978-03-10',role:'집사',faith:'세례',phone:'010-1234-5678',group:'1남전도회',job:'자영업'},
+     {id:'p2',name:'김은희',gender:'여',birth:'1980-05-22',role:'성도',faith:'세례',phone:'010-1234-9999',group:'3여전도회',job:'주부'},
+     {id:'p3',name:'김지우',gender:'남',birth:'2005-08-15',role:'성도',faith:'학습',phone:'',group:'고등부',job:'학생'}
+   ],
+   memos:[
+     {id:'m1',date:'2025-03-10',tag:'daily',content:'예배 후 대화. 사업 어렵다고 함. 지속적 관심 필요.'},
+     {id:'m2',date:'2025-02-20',tag:'visit',content:'심방 방문. 가족 모두 건강. 아들 고3 수능 준비 중.'},
+     {id:'m3',date:'2025-01-05',tag:'prayer',content:'기도제목: 사업 회복, 아들 수능 합격.'}
+   ],
+   education: null
+  },
+  {id:'f2', name:'이수진 가족', parish:'2교구', type:'regular', createdAt:'2015-04-20',
+   members:[
+     {id:'p4',name:'이수진',gender:'여',birth:'1990-03-17',role:'성도',faith:'세례',phone:'010-2345-6789',group:'5여전도회',job:'교사'}
+   ],
+   memos:[
+     {id:'m4',date:'2025-03-15',tag:'daily',content:'셀 모임 후 대화. 담임 맡아 바쁘다고 함.'}
+   ],
+   education: null
+  },
+  {id:'f3', name:'박준서 가족', parish:'', type:'new', createdAt:'2025-03-01',
+   members:[
+     {id:'p5',name:'박준서',gender:'남',birth:'1995-06-10',role:'성도',faith:'구도자',phone:'010-4444-5555',group:'',job:'직장인'},
+     {id:'p6',name:'박하은',gender:'여',birth:'1997-02-20',role:'성도',faith:'구도자',phone:'010-4444-6666',group:'',job:'간호사'}
+   ],
+   memos:[
+     {id:'m5',date:'2025-03-01',tag:'daily',content:'새가족 등록. 친구 소개로 오심. 부부 함께 등록.'}
+   ],
+   education:{sessions:[
+     {num:1,date:'2025-03-02'},{num:2,date:'2025-03-09'},{num:3,date:'2025-03-16'}
+   ]}
+  },
+  {id:'f4', name:'최아름 가족', parish:'', type:'new', createdAt:'2025-02-01',
+   members:[
+     {id:'p7',name:'최아름',gender:'여',birth:'2000-11-20',role:'성도',faith:'구도자',phone:'010-5555-6666',group:'',job:'대학원생'}
+   ],
+   memos:[],
+   education:{sessions:[
+     {num:1,date:'2025-02-02'},{num:2,date:'2025-02-09'},{num:3,date:'2025-02-16'},
+     {num:4,date:'2025-02-23'},{num:5,date:'2025-03-02'},{num:6,date:'2025-03-09'}
+   ]}
+  }
+];
+
+// ============================================================
+// 초기화
+// ============================================================
+function init() {
+  loadSettings();
+  const saved = localStorage.getItem('church_v3');
+  families = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(SAMPLE_FAMILIES));
+  // 오늘 날짜로 메모 날짜 기본값
+  document.getElementById('memoDateInput').value = today();
+  renderHome();
+  renderParishLeaders();
+  loadGoogleAPIs();
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+function saveData() { localStorage.setItem('church_v3', JSON.stringify(families)); if(accessToken) saveToDrive(); }
+function loadSettings() {
+  try {
+    settings = JSON.parse(localStorage.getItem('church_settings_v3') || '{}');
+    if(settings.geminiKey) document.getElementById('geminiKeyInput').value = settings.geminiKey;
+    if(settings.oauthClient) document.getElementById('oauthClientInput').value = settings.oauthClient;
+    if(settings.myName) document.getElementById('userName').textContent = settings.myName;
+  } catch(e) {}
+}
+function saveSettings() {
+  settings.geminiKey = document.getElementById('geminiKeyInput').value.trim();
+  settings.oauthClient = document.getElementById('oauthClientInput').value.trim();
+  localStorage.setItem('church_settings_v3', JSON.stringify(settings));
+}
+
+// ============================================================
+// 페이지 네비게이션
+// ============================================================
+const PAGE_TITLES = {home:'오늘 할 일','families':'교인 가족 목록','family-detail':'가족 상세','newfamily':'새가족 관리',stats:'통계',settings:'설정'};
+function goPage(p) {
+  document.querySelectorAll('.panel').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.bnav').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const nav = document.getElementById('nav-'+p);
+  if(nav) nav.classList.add('active');
+  document.getElementById('topbarTitle').textContent = PAGE_TITLES[p] || '';
+  if(p==='families') renderFamilies();
+  if(p==='newfamily') renderNewFamily();
+  if(p==='stats') renderStats();
+  if(p==='home') renderHome();
+}
+
+// ============================================================
+// 홈
+// ============================================================
+function renderHome() {
+  const newFams = families.filter(f=>f.type==='new');
+  const waiting = newFams.filter(f=>(f.education?.sessions||[]).length>=6 && !f.parish);
+  const thisMonth = today().slice(0,7);
+  let memoCount = 0;
+  families.forEach(f=>(f.memos||[]).forEach(m=>{ if(m.date.startsWith(thisMonth)) memoCount++; }));
+
+  document.getElementById('homeTotal').textContent = families.length;
+  document.getElementById('homeNew').textContent = newFams.filter(f=>!((f.education?.sessions||[]).length>=6&&!f.parish)).length;
+  document.getElementById('homeWaiting').textContent = waiting.length;
+  document.getElementById('homeMemos').textContent = memoCount;
+
+  // 알림
+  let alerts = [];
+  waiting.forEach(f => alerts.push({f, icon:'★', cls:'ic-p', desc:'새가족 교육 6회 수료 — 교구 배정 필요', assign:true}));
+  families.forEach(f => {
+    const mm = (new Date().getMonth()+1)+'월', dd = new Date().getDate()+'일';
+    (f.members||[]).forEach(m => {
+      if(m.birth) {
+        const bd = new Date(m.birth);
+        if((bd.getMonth()+1)+'월'===mm && bd.getDate()+'일'===dd)
+          alerts.push({f, icon:'♪', cls:'ic-a', desc:`${m.name} 생일 오늘`, assign:false});
+      }
+    });
+  });
+
+  document.getElementById('homeAlerts').innerHTML = alerts.slice(0,5).map(a =>
+    `<div class="arow">
+      <div class="aicon ${a.cls}">${a.icon}</div>
+      <div class="abody"><div class="aname">${a.f.name}</div><div class="adesc">${a.desc}</div></div>
+      <button class="btn" style="font-size:12px;${a.assign?'background:var(--wl);color:var(--warning);border-color:#EF9F27;':''}" onclick="showFamilyDetail('${a.f.id}')">${a.assign?'배정하기':'보기'}</button>
+    </div>`
+  ).join('') || '<div style="color:var(--th);font-size:14px;padding:8px 0;">오늘 챙겨야 할 분이 없습니다.</div>';
+
+  // 최근 메모
+  const allMemos = [];
+  families.forEach(f=>(f.memos||[]).forEach(m=>allMemos.push({...m, fname:f.name, fid:f.id})));
+  allMemos.sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('homeRecentMemos').innerHTML = allMemos.slice(0,3).map(m =>
+    `<div class="arow">
+      <div class="abody">
+        <div class="aname" style="font-size:14px;">${m.fname} <span class="mtag ${MEMO_TAG_CLASS[m.tag]}">${MEMO_TAGS[m.tag]}</span></div>
+        <div class="adesc">${m.content.slice(0,40)}${m.content.length>40?'...':''}</div>
+      </div>
+      <div style="font-size:11px;color:var(--th);">${m.date.slice(5)}</div>
+    </div>`
+  ).join('') || '<div style="color:var(--th);font-size:14px;padding:8px 0;">메모가 없습니다.</div>';
+}
+
+// ============================================================
+// 가족 목록
+// ============================================================
+function renderFamilies() {
+  const filtered = families.filter(f => {
+    const ok = familyFilter==='전체' || (familyFilter==='새가족'&&f.type==='new') || f.parish===familyFilter;
+    return ok && (!familySearch || f.name.includes(familySearch) || (f.members||[]).some(m=>m.name.includes(familySearch)));
+  });
+  document.getElementById('familyList').innerHTML = filtered.map((f,i) => {
+    const [bg,fc] = getColor(families.indexOf(f));
+    const stL = f.type==='new'?'새가족':'교인';
+    const stC = f.type==='new'?'tag-new':'tag-active';
+    const memberNames = (f.members||[]).map(m=>m.name).join(' · ');
+    const lastMemo = (f.memos||[]).slice().sort((a,b)=>b.date.localeCompare(a.date))[0];
+    return `<div class="fcard" onclick="showFamilyDetail('${f.id}')">
+      <div class="fcard-header">
+        <div class="mavatar" style="background:${bg};color:${fc};width:44px;height:44px;font-size:14px;">${f.name.slice(0,2)}</div>
+        <div style="flex:1;">
+          <div class="fcard-name">${f.name}</div>
+          <div class="fcard-sub">${f.parish||'교구 미배정'} · ${(f.members||[]).length}명</div>
+        </div>
+        <span class="tag ${stC}">${stL}</span>
+      </div>
+      <div class="fmembers">${(f.members||[]).map(m=>`<span class="fmchip">${m.name}(${m.gender||''})</span>`).join('')}</div>
+      ${lastMemo ? `<div style="font-size:12px;color:var(--th);margin-top:6px;">최근 메모: ${lastMemo.content.slice(0,30)}...</div>` : ''}
+    </div>`;
+  }).join('') || '<div style="color:var(--th);font-size:14px;padding:16px 0;text-align:center;">검색 결과 없음</div>';
+}
+
+function filterFamilies(v) { familySearch=v; renderFamilies(); }
+function setFFilter(btn,f) { familyFilter=f; document.querySelectorAll('.fchip').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); renderFamilies(); }
+
+// ============================================================
+// 가족 상세
+// ============================================================
+function showFamilyDetail(id) {
+  const f = families.find(x=>x.id===id);
+  if(!f) return;
+  currentFamilyId = id;
+  const [bg,fc] = getColor(families.indexOf(f));
+
+  document.getElementById('detailFamilyName').textContent = f.name;
+  document.getElementById('detailFamilySub').textContent = `${f.parish||'교구 미배정'} · 구성원 ${(f.members||[]).length}명`;
+
+  // 구성원
+  document.getElementById('detailMembers').innerHTML = (f.members||[]).map((m,i) => {
+    const [mb,mf] = getColor(i);
+    const groupLabel = m.group ? `<span style="font-size:11px;background:var(--bgs);border:1px solid var(--border);padding:1px 6px;border-radius:999px;color:var(--ts);">${m.group}</span>` : '';
+    return `<div class="mitem">
+      <div class="mavatar" style="background:${mb};color:${mf};">${m.name.slice(0,2)}</div>
+      <div class="minfo">
+        <div class="mname">${m.name} <span style="font-size:12px;color:var(--ts);">${m.gender||''} · ${m.role||''}</span> ${groupLabel}</div>
+        <div class="msub">${m.birth||''} · ${m.faith||''} · ${m.phone||''}</div>
+        ${m.job ? `<div class="msub">${m.job}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // 새가족 교육
+  const eduSec = document.getElementById('detailEduSection');
+  if(f.type==='new') { eduSec.style.display='block'; renderEduSection(f); } else { eduSec.style.display='none'; }
+
+  // 교구 배정
+  const asnSec = document.getElementById('detailAssignSection');
+  if(f.type==='new' && (f.education?.sessions||[]).length>=6 && !f.parish) {
+    asnSec.style.display='block'; renderAssignSection();
+  } else { asnSec.style.display='none'; }
+
+  // 메모
+  renderFamilyMemos(f);
+  document.getElementById('memoDateInput').value = today();
+  document.getElementById('memoInputSection').style.display = 'none';
+  document.getElementById('detailAiBox').style.display = 'none';
+  selectedParish = null;
+
+  goPage('family-detail');
+  document.getElementById('nav-families').classList.add('active');
+}
+
+// ============================================================
+// 가족 메모
+// ============================================================
+function renderFamilyMemos(f) {
+  const memos = (f.memos||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('memoList').innerHTML = memos.length === 0
+    ? '<div style="color:var(--th);font-size:14px;padding:13px 15px;">메모가 없습니다.</div>'
+    : memos.map(m => `
+      <div class="memo-item">
+        <div class="memo-meta">
+          <span class="memo-date">${m.date}</span>
+          <span class="mtag ${MEMO_TAG_CLASS[m.tag]}">${MEMO_TAGS[m.tag]||m.tag}</span>
+        </div>
+        <div class="memo-content">${m.content}</div>
+      </div>`).join('');
+}
+
+function toggleMemoInput() {
+  const sec = document.getElementById('memoInputSection');
+  sec.style.display = sec.style.display==='none' ? 'block' : 'none';
+}
+
+function saveFamilyMemo() {
+  const content = document.getElementById('memoTextInput').value.trim();
+  if(!content) { showToast('내용을 입력하세요.'); return; }
+  const f = families.find(x=>x.id===currentFamilyId);
+  if(!f) return;
+  if(!f.memos) f.memos = [];
+  f.memos.push({
+    id: 'me'+Date.now(),
+    date: document.getElementById('memoDateInput').value || today(),
+    tag: document.getElementById('memoTagSelect').value,
+    content
+  });
+  saveData();
+  document.getElementById('memoTextInput').value = '';
+  document.getElementById('memoInputSection').style.display = 'none';
+  renderFamilyMemos(f);
+  renderHome();
+  showToast('메모 저장됨');
+}
+
+// ============================================================
+// 새가족 교육
+// ============================================================
+function renderEduSection(f) {
+  const sess = f.education?.sessions || [];
+  const cnt = sess.length;
+  const isDone = cnt >= 6;
+  const html = `
+    <div class="edu-header">
+      <div style="font-size:15px;font-weight:700;color:var(--purple);margin-bottom:4px;">새가족 교육 현황</div>
+      <div style="font-size:13px;color:#3C3489;">${cnt}/6회 완료${isDone?' — 수료 완료!':''}</div>
+    </div>
+    <div class="edu-progress">
+      ${Array.from({length:6},(_,i)=>{
+        const done = sess.find(s=>s.num===i+1);
+        if(done) return `<div class="edu-dot done" title="${done.date}">${i+1}<span style="font-size:9px;opacity:0.85;">${done.date.slice(5)}</span></div>`;
+        else if(i===cnt) return `<div class="edu-dot next" onclick="openCalForSession(${i+1})">${i+1}<span style="font-size:9px;">입력</span></div>`;
+        else return `<div class="edu-dot">${i+1}</div>`;
+      }).join('')}
+    </div>
+    <div id="calPopupEdu" style="display:none;"></div>`;
+  document.getElementById('detailEduSection').innerHTML = html;
+}
+
+function openCalForSession(n) {
+  calTarget = n;
+  const now = new Date();
+  calYear = now.getFullYear(); calMonth = now.getMonth();
+  document.getElementById('calPopupEdu').style.display = 'block';
+  renderCal();
+}
+
+function renderCal() {
+  const mns = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const days = ['일','월','화','수','목','금','토'];
+  const first = new Date(calYear,calMonth,1).getDay();
+  const last = new Date(calYear,calMonth+1,0).getDate();
+  const td = new Date();
+  let html = `<div class="cal-popup">
+    <div class="cal-header">
+      <button class="btn" style="padding:6px 12px;" onclick="calMove(-1)">‹</button>
+      <div style="font-size:15px;font-weight:700;">${calYear}년 ${mns[calMonth]}</div>
+      <button class="btn" style="padding:6px 12px;" onclick="calMove(1)">›</button>
+    </div>
+    <div class="cal-grid">
+      ${days.map(d=>`<div class="cal-dl">${d}</div>`).join('')}
+      ${Array(first).fill('<div class="cal-day empty"></div>').join('')}
+      ${Array.from({length:last},(_,i)=>{
+        const d=i+1;
+        const isT=d===td.getDate()&&calMonth===td.getMonth()&&calYear===td.getFullYear();
+        return `<div class="cal-day ${isT?'today':''}" onclick="selectCalDate(${calYear},${calMonth+1},${d})">${d}</div>`;
+      }).join('')}
+    </div>
+    <button class="btn btn-full" style="margin-top:10px;" onclick="closeCalPopup()">취소</button>
+  </div>`;
+  document.getElementById('calPopupEdu').innerHTML = html;
+}
+
+function calMove(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;} renderCal(); }
+function closeCalPopup() { document.getElementById('calPopupEdu').style.display='none'; calTarget=null; }
+
+function selectCalDate(y,mo,d) {
+  const f = families.find(x=>x.id===currentFamilyId);
+  if(!f || !calTarget) return;
+  if(!f.education) f.education={sessions:[]};
+  const ds = `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const ex = f.education.sessions.find(s=>s.num===calTarget);
+  if(ex) ex.date=ds; else f.education.sessions.push({num:calTarget,date:ds});
+  f.education.sessions.sort((a,b)=>a.num-b.num);
+  saveData();
+  closeCalPopup();
+  renderEduSection(f);
+  if(f.education.sessions.length>=6) {
+    document.getElementById('detailAssignSection').style.display='block';
+    renderAssignSection();
+    showToast('🎉 6회 수료! 교구 배정을 진행해주세요.');
+    renderHome();
+  } else {
+    showToast(`${calTarget}회 교육 일자 저장 (${ds})`);
+  }
+}
+
+// ============================================================
+// 교구 배정
+// ============================================================
+function renderAssignSection() {
+  selectedParish = null;
+  document.getElementById('detailAssignSection').innerHTML = `
+    <div class="assign-box">
+      <div style="font-size:15px;font-weight:700;color:var(--warning);margin-bottom:10px;">교구 배정</div>
+      <div class="pgrid">
+        ${PARISHES.map(p=>`<div class="pbtn" id="pb-${p}" onclick="selectParish('${p}')">${p}</div>`).join('')}
+      </div>
+      <button class="btn btn-p btn-full" onclick="assignParish()">배정 완료</button>
+    </div>`;
+}
+
+function selectParish(p) {
+  selectedParish = p;
+  document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('sel'));
+  const el = document.getElementById('pb-'+p);
+  if(el) el.classList.add('sel');
+}
+
+function assignParish() {
+  if(!selectedParish) { showToast('교구를 선택해주세요.'); return; }
+  const f = families.find(x=>x.id===currentFamilyId);
+  if(!f) return;
+  f.parish = selectedParish;
+  f.type = 'regular';
+  if(!f.memos) f.memos=[];
+  f.memos.push({id:'me'+Date.now(),date:today(),tag:'daily',content:`[교구 배정] ${selectedParish} 배정 완료`});
+  saveData();
+  showFamilyDetail(f.id);
+  showToast(`${f.name} → ${selectedParish} 배정 완료!`);
+  renderHome();
+}
+
+// ============================================================
+// 새가족 관리
+// ============================================================
+function renderNewFamily() {
+  const nl = families.filter(f=>f.type==='new');
+  const wt = nl.filter(f=>(f.education?.sessions||[]).length>=6 && !f.parish);
+  document.getElementById('waitingAssign').textContent = wt.length>0 ? wt.map(f=>f.name).join(', ')+' — 교구 배정 대기 중' : '교구 배정 대기자 없음';
+  document.getElementById('newFamilyList').innerHTML = nl.map(f => {
+    const sess = f.education?.sessions||[];
+    const cnt = sess.length;
+    const dots = Array.from({length:6},(_,i)=>{
+      const done=sess.find(s=>s.num===i+1);
+      const cls=done?'edot-d':i===cnt?'edot-n':'edot-e';
+      return `<div class="edot ${cls}">${done?'✓':i+1}</div>`;
+    }).join('');
+    const wb = cnt>=6&&!f.parish ? '<span class="tag" style="background:var(--wl);color:var(--warning);font-size:11px;">배정 대기</span>' : '';
+    return `<div class="nfcard" onclick="showFamilyDetail('${f.id}')">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <div style="font-size:16px;font-weight:600;flex:1;">${f.name}</div>${wb}
+        <div style="font-size:12px;color:var(--ts);">${cnt}/6회</div>
+      </div>
+      <div style="font-size:13px;color:var(--ts);margin-bottom:5px;">${(f.members||[]).map(m=>m.name).join(' · ')}</div>
+      <div class="edots">${dots}</div>
+    </div>`;
+  }).join('') || '<div style="color:var(--th);font-size:14px;padding:20px 0;text-align:center;">새가족이 없습니다.</div>';
+}
+
+// ============================================================
+// 통계
+// ============================================================
+function renderStats() {
+  const total = families.length;
+  const newF = families.filter(f=>f.type==='new').length;
+  const waiting = families.filter(f=>f.type==='new'&&(f.education?.sessions||[]).length>=6&&!f.parish).length;
+  const totalMembers = families.reduce((a,f)=>a+(f.members||[]).length, 0);
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="sb"><div class="sn" style="color:var(--primary);">${total}</div><div class="sl-">전체 가족</div></div>
+    <div class="sb"><div class="sn" style="color:var(--ts);">${totalMembers}</div><div class="sl-">전체 교인 수</div></div>
+    <div class="sb"><div class="sn" style="color:var(--purple);">${newF}</div><div class="sl-">새가족 교육 중</div></div>
+    <div class="sb"><div class="sn" style="color:var(--warning);">${waiting}</div><div class="sl-">교구 배정 대기</div></div>`;
+
+  const maxC = Math.max(...PARISHES.map(p=>families.filter(f=>f.parish===p).length),1);
+  document.getElementById('parishChart').innerHTML = PARISHES.map(p => {
+    const cnt = families.filter(f=>f.parish===p).length;
+    const w = Math.round(cnt/maxC*100);
+    const color = PARISH_COLORS[p]||'#185FA5';
+    return `<div class="brow"><div class="blabel">${p}</div><div class="btrack"><div class="bfill" style="width:${Math.max(w,4)}%;background:${color};"><span class="bnum">${cnt}</span></div></div></div>`;
+  }).join('');
+
+  const nl = families.filter(f=>f.type==='new');
+  document.getElementById('newFamilyStats').innerHTML = nl.length===0
+    ? '<div style="color:var(--th);font-size:14px;">새가족 없음</div>'
+    : nl.map(f=>{
+        const cnt=(f.education?.sessions||[]).length;
+        const pct=Math.round(cnt/6*100);
+        return `<div class="brow"><div class="blabel" style="min-width:70px;">${f.name.slice(0,6)}</div><div class="btrack"><div class="bfill" style="width:${Math.max(pct,4)}%;background:var(--purple);"><span class="bnum">${cnt}/6</span></div></div></div>`;
+      }).join('');
+
+  // 메모 태그 분석
+  const tagCounts = {};
+  Object.keys(MEMO_TAGS).forEach(t=>tagCounts[t]=0);
+  families.forEach(f=>(f.memos||[]).forEach(m=>{ if(tagCounts[m.tag]!==undefined) tagCounts[m.tag]++; }));
+  const maxT = Math.max(...Object.values(tagCounts),1);
+  document.getElementById('memoTagStats').innerHTML = Object.entries(MEMO_TAGS).map(([key,label])=>{
+    const cnt=tagCounts[key]||0;
+    const w=Math.round(cnt/maxT*100);
+    const colors={daily:'#0F6E56',visit:'#534AB7',counsel:'#854F0B',prayer:'#993556',event:'#3B6D11',edu:'#185FA5'};
+    return `<div class="brow"><div class="blabel">${label}</div><div class="btrack"><div class="bfill" style="width:${Math.max(w,4)}%;background:${colors[key]||'#888'};"><span class="bnum">${cnt}</span></div></div></div>`;
+  }).join('');
+}
+
+// ============================================================
+// 가족 등록 모달
+// ============================================================
+let memberForms = [];
+function openAddFamilyModal() {
+  memberForms = [];
+  memberFormCount = 0;
+  document.getElementById('memberAddList').innerHTML = '';
+  document.getElementById('fam_name').value = '';
+  document.getElementById('fam_parish').value = '';
+  document.getElementById('fam_type').value = 'regular';
+  document.getElementById('fam_memo').value = '';
+  addMemberForm(); // 첫 구성원 자동 추가
+  document.getElementById('addFamilyModal').classList.add('open');
+}
+
+function updateFamType() {}
+
+function addMemberForm() {
+  const idx = memberFormCount++;
+  const div = document.createElement('div');
+  div.className = 'member-add-item';
+  div.id = 'mform-'+idx;
+  div.innerHTML = `
+    <button class="member-remove-btn" onclick="removeMemberForm(${idx})">✕</button>
+    <div class="member-add-header">
+      <div style="font-size:14px;font-weight:600;color:var(--ts);">구성원 ${idx+1}</div>
+    </div>
+    <div class="grid2" style="margin-bottom:8px;">
+      <div><label class="fl" style="font-size:12px;">이름 *</label><input class="finput" id="mn-${idx}" placeholder="이름" style="font-size:14px;padding:9px;"></div>
+      <div><label class="fl" style="font-size:12px;">성별</label>
+        <select class="fselect" id="mg-${idx}" style="font-size:14px;padding:9px;">
+          <option value="">선택</option><option>남</option><option>여</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:8px;">
+      <div><label class="fl" style="font-size:12px;">생년월일</label><input class="finput" id="mb-${idx}" type="date" style="font-size:14px;padding:9px;"></div>
+      <div><label class="fl" style="font-size:12px;">직분</label>
+        <select class="fselect" id="mr-${idx}" style="font-size:14px;padding:9px;">
+          ${ROLES_ADULT.map(r=>`<option>${r}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:8px;">
+      <div><label class="fl" style="font-size:12px;">신앙정도</label>
+        <select class="fselect" id="mf-${idx}" style="font-size:14px;padding:9px;">
+          ${FAITH_LEVELS.map(f=>`<option>${f}</option>`).join('')}
+        </select>
+      </div>
+      <div><label class="fl" style="font-size:12px;">직업</label><input class="finput" id="mj-${idx}" placeholder="직업" style="font-size:14px;padding:9px;"></div>
+    </div>
+    <div style="margin-bottom:8px;"><label class="fl" style="font-size:12px;">휴대폰 번호</label><input class="finput" id="mp-${idx}" placeholder="010-0000-0000" type="tel" style="font-size:14px;padding:9px;"></div>
+    <div><label class="fl" style="font-size:12px;">소속</label>
+      <select class="fselect" id="mgrp-${idx}" onchange="updateGroupOptions(${idx})" style="font-size:14px;padding:9px;">
+        <option value="">소속 선택</option>
+        <optgroup label="남전도회">${MEN_GROUPS.map(g=>`<option value="${g}">${g}</option>`).join('')}</optgroup>
+        <optgroup label="여전도회">${WOMEN_GROUPS.map(g=>`<option value="${g}">${g}</option>`).join('')}</optgroup>
+        <optgroup label="교회학교">${CHILD_GROUPS.map(g=>`<option value="${g}">${g}</option>`).join('')}</optgroup>
+      </select>
+    </div>`;
+  document.getElementById('memberAddList').appendChild(div);
+  memberForms.push(idx);
+}
+
+function removeMemberForm(idx) {
+  const el = document.getElementById('mform-'+idx);
+  if(el) el.remove();
+  memberForms = memberForms.filter(i=>i!==idx);
+}
+
+function updateGroupOptions(idx) {}
+
+function submitFamily() {
+  const name = document.getElementById('fam_name').value.trim();
+  if(!name) { showToast('가족명을 입력하세요.'); return; }
+  const parish = document.getElementById('fam_parish').value;
+  const type = document.getElementById('fam_type').value;
+  const memoText = document.getElementById('fam_memo').value.trim();
+
+  const members = [];
+  memberForms.forEach(idx => {
+    const mname = (document.getElementById('mn-'+idx)?.value||'').trim();
+    if(!mname) return;
+    members.push({
+      id: 'p'+Date.now()+idx,
+      name: mname,
+      gender: document.getElementById('mg-'+idx)?.value||'',
+      birth: document.getElementById('mb-'+idx)?.value||'',
+      role: document.getElementById('mr-'+idx)?.value||'성도',
+      faith: document.getElementById('mf-'+idx)?.value||'',
+      job: document.getElementById('mj-'+idx)?.value||'',
+      phone: document.getElementById('mp-'+idx)?.value||'',
+      group: document.getElementById('mgrp-'+idx)?.value||''
+    });
+  });
+
+  const f = {
+    id: 'f'+Date.now(),
+    name, parish, type,
+    createdAt: today(),
+    members,
+    memos: memoText ? [{id:'me'+Date.now(),date:today(),tag:'daily',content:'[등록] '+memoText}] : [],
+    education: type==='new' ? {sessions:[]} : null
+  };
+
+  families.push(f);
+  saveData();
+  closeModal('addFamilyModal');
+  renderFamilies();
+  renderHome();
+  showToast(name+' 등록 완료!');
+}
+
+// ============================================================
+// AI 메시지
+// ============================================================
+async function triggerFamilyAI() {
+  const f = families.find(x=>x.id===currentFamilyId);
+  if(!f) return;
+  const apiKey = settings.geminiKey || document.getElementById('geminiKeyInput').value.trim();
+  const box = document.getElementById('detailAiBox');
+  const content = document.getElementById('detailAiContent');
+  box.style.display = 'block';
+  content.innerHTML = '<div style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--primary);"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span style="margin-left:4px;">생성 중...</span></div>';
+  box.scrollIntoView({behavior:'smooth'});
+  if(!apiKey) { content.innerHTML='<div style="color:var(--warning);">설정에서 Gemini API 키를 입력해주세요.</div>'; return; }
+
+  const lastMemos = (f.memos||[]).slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3)
+    .map(m=>`- [${MEMO_TAGS[m.tag]}] ${m.content}`).join('\n');
+  const memberDesc = (f.members||[]).map(m=>`${m.name}(${m.gender||''} ${m.birth?new Date().getFullYear()-parseInt(m.birth.slice(0,4))+'세':''})`).join(', ');
+  const stT = f.type==='new' ? `새가족 (교육 ${(f.education?.sessions||[]).length}/6회)` : '기존 교인';
+
+  const prompt = `당신은 교회 교역자입니다. 가족에게 보낼 따뜻한 심방 문자 메시지를 작성해주세요.
+
+가족명: ${f.name}
+소속: ${f.parish||'새가족'} / ${stT}
+구성원: ${memberDesc}
+최근 소통 기록:
+${lastMemos||'없음'}
+
+조건: 200자 이내, 따뜻하고 진심 어린 어조, 가족 상황 반영. 메시지만 출력.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+    });
+    const data = await res.json();
+    if(data.error) { content.innerHTML=`<div style="color:#A32D2D;">오류: ${data.error.message}</div>`; return; }
+    content.className = 'ai-msg';
+    content.textContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '생성 실패';
+  } catch(e) { content.innerHTML=`<div style="color:#A32D2D;">연결 오류: ${e.message}</div>`; }
+}
+function copyAiMsg() { navigator.clipboard.writeText(document.getElementById('detailAiContent').textContent).then(()=>showToast('복사됨')); }
+
+// ============================================================
+// 설정
+// ============================================================
+function renderParishLeaders() {
+  document.getElementById('parishLeaders').innerHTML = PARISHES.map(p => {
+    const key='leader_'+p;
+    const val=settings[key]||'';
+    return `<div style="margin-bottom:10px;"><div style="font-size:14px;font-weight:600;margin-bottom:4px;">${p} 담당 전도사</div><input class="api-input" style="font-family:inherit;" value="${val}" placeholder="이름 / 연락처" oninput="settings['${key}']=this.value;saveSettings();"></div>`;
+  }).join('');
+}
+
+// ============================================================
+// Google Drive
+// ============================================================
+function loadGoogleAPIs() {
+  const s1=document.createElement('script');s1.src='https://accounts.google.com/gsi/client';s1.onload=()=>{gisInited=true;};document.head.appendChild(s1);
+  const s2=document.createElement('script');s2.src='https://apis.google.com/js/api.js';s2.onload=()=>{gapi.load('client',async()=>{await gapi.client.init({});await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');});};document.head.appendChild(s2);
+}
+async function initGoogleDrive() {
+  const cId=settings.oauthClient||document.getElementById('oauthClientInput').value.trim();
+  if(!cId){showToast('OAuth 클라이언트 ID를 입력해주세요.');return;}
+  if(!gisInited){showToast('잠시 후 다시 시도해주세요.');return;}
+  try {
+    tokenClient=google.accounts.oauth2.initTokenClient({client_id:cId,scope:'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file',callback:async(resp)=>{
+      if(resp.error){showToast('인증 실패');return;}
+      accessToken=resp.access_token;gapi.client.setToken({access_token:accessToken});
+      document.getElementById('driveStatus').textContent='✓ 구글 드라이브 연결됨';
+      showToast('드라이브 연결 성공!');await syncFromDrive();
+    }});
+    tokenClient.requestAccessToken();
+  } catch(e) { showToast('오류: '+e.message); }
+}
+async function syncFromDrive() {
+  try {
+    const res=await gapi.client.drive.files.list({spaces:'appDataFolder',q:"name='church-v3.json'",fields:'files(id,name)'});
+    const files=res.result.files;
+    if(files&&files.length>0) {
+      driveFileId=files[0].id;
+      const fr=await gapi.client.drive.files.get({fileId:driveFileId,alt:'media'});
+      const data=typeof fr.result==='string'?JSON.parse(fr.result):fr.result;
+      if(data&&Array.isArray(data.families)){families=data.families;saveData();renderHome();showToast('드라이브에서 불러옴');}
+    } else { await saveToDrive(); }
+  } catch(e) { showToast('불러오기 실패'); }
+}
+async function saveToDrive() {
+  if(!accessToken)return;
+  const content=JSON.stringify({families,updatedAt:new Date().toISOString()});
+  try {
+    if(driveFileId) {
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{method:'PATCH',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:content});
+    } else {
+      const meta={name:'church-v3.json',parents:['appDataFolder']};
+      const form=new FormData();
+      form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+      form.append('file',new Blob([content],{type:'application/json'}));
+      const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Authorization':'Bearer '+accessToken},body:form});
+      const d=await res.json();driveFileId=d.id;
+    }
+  } catch(e) {}
+}
+
+// ============================================================
+// 데이터 관리
+// ============================================================
+function exportData() {
+  const blob=new Blob([JSON.stringify({families,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='church-'+today()+'.json';a.click();showToast('내보내기 완료');
+}
+function importData(input) {
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const data=JSON.parse(e.target.result);if(data.families){families=data.families;saveData();renderHome();showToast('가져오기 완료 — '+families.length+'가족');}}catch{showToast('파일 오류');}};
+  reader.readAsText(file);
+}
+
+// ============================================================
+// 역할 전환
+// ============================================================
+function toggleRole() {
+  const btn=document.getElementById('roleBtn');
+  const isLeader=btn.textContent==='관리자';
+  btn.textContent=isLeader?'새가족담당':'관리자';
+  btn.style.background=isLeader?'var(--pul)':'var(--pl)';
+  btn.style.color=isLeader?'var(--purple)':'var(--pd)';
+  showToast(isLeader?'새가족 담당자 모드':'관리자 모드');
+}
+
+// ============================================================
+// 유틸
+// ============================================================
+function editFamily() { showToast('정보 수정 기능 — 추후 업데이트 예정'); }
+function getColor(i) { return AVATAR_COLORS[i%AVATAR_COLORS.length]; }
+function showToast(msg) { const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+init();
+</script>
+</body>
+</html>
